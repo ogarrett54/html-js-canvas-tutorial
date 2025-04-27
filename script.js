@@ -1,10 +1,11 @@
 // Parameters
 const N_PARTICLES = 5;
 const MAX_SIZE = 10;
-const MAX_SPEED = 2;
-const DECAY_RATE = 0.03;
-const TRAILS = true;
-const TRAIL_FADE = 0.2;
+const MAX_SPEED = 1;
+const DECAY_RATE = 0.02;
+const TRAILS = false;
+const TRAIL_FADE = 0.075;
+const THROTTLE_GEN_PER_SEC = 30;
 
 const canvas = document.getElementById("canvas1");
 const ctx = canvas.getContext("2d");
@@ -28,8 +29,8 @@ class Particle {
     this.x = mouse.x;
     this.y = mouse.y;
     this.size = Math.random() * MAX_SIZE + 1;
-    this.speedX = Math.random() * MAX_SPEED - 1;
-    this.speedY = Math.random() * MAX_SPEED - 1;
+    this.speedX = Math.random() * MAX_SPEED - MAX_SPEED / 2;
+    this.speedY = Math.random() * MAX_SPEED - MAX_SPEED / 2;
     this.color = `hsl(${hue}, 100%, 50%)`;
   }
   update() {
@@ -75,7 +76,10 @@ function throttle(callback, limit) {
   };
 }
 
-canvas.addEventListener("mousemove", throttle(handleMouseMove, 1000 / 20));
+canvas.addEventListener(
+  "mousemove",
+  throttle(handleMouseMove, 1000 / THROTTLE_GEN_PER_SEC)
+);
 
 function handleParticles() {
   for (let i = 0; i < particlesArray.length; i++) {
