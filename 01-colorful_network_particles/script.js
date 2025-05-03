@@ -5,7 +5,7 @@ const MAX_SPEED = 1;
 const DECAY_RATE = 0.02;
 const TRAILS = false;
 const TRAIL_FADE = 0.075;
-const THROTTLE_GEN_PER_SEC = 30;
+const THROTTLE_GEN_PER_SEC = 20;
 
 const canvas = document.getElementById("canvas1");
 const ctx = canvas.getContext("2d");
