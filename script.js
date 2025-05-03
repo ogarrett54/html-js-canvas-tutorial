@@ -1,125 +1,110 @@
-let canvas;
-let ctx;
-let flowField;
-let flowFieldAnimation;
+const NETWORKS = false;
 
-// Wait for the window to load all elements before grabbing them and setting the canvas dimensions
-window.onload = function () {
-  canvas = document.getElementById("canvas1");
-  ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  flowField = new FlowFieldEffect(ctx, canvas.width, canvas.height);
-  flowField.animate(0);
+const canvas = document.getElementById("canvas1");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const numParticles = 500;
+let particlesArray = [];
+
+// set up text as an object
+let titleElement = document.getElementById("title1");
+let titleMeasurements = titleElement.getBoundingClientRect();
+let title = {
+  x: titleMeasurements.left,
+  y: titleMeasurements.top,
+  width: titleMeasurements.width,
+  height: titleMeasurements.height - 90,
 };
 
-window.addEventListener("resize", function () {
-  cancelAnimationFrame(flowFieldAnimation);
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  flowField = new FlowFieldEffect(ctx, canvas.width, canvas.height);
-  flowField.animate(0);
-});
-
-const mouse = {
-  x: 0,
-  y: 0,
-};
-
-window.addEventListener("mousemove", function (e) {
-  mouse.x = e.x;
-  mouse.y = e.y;
-});
-
-class FlowFieldEffect {
-  // these are private class features. they can't be changed from outside of the class
-  #ctx;
-  #width;
-  #height;
-  constructor(ctx, width, height) {
-    this.#ctx = ctx;
-    this.#ctx.lineWidth = 1;
-    this.#width = width;
-    this.#height = height;
-    this.lastTime = 0;
-    this.interval = 1000 / 60;
-    this.timer = 0;
-    this.cellSize = 8;
-    this.gradient;
-    this.#createGradient();
-    this.#ctx.strokeStyle = this.gradient;
-    this.radius = 0;
-    this.vr = 0.01;
-    this.noise = new Noise(Math.random());
-  }
-  #createGradient() {
-    this.gradient = this.#ctx.createLinearGradient(
-      0,
-      0,
-      this.#width,
-      this.#height
-    );
-    this.gradient.addColorStop("0.1", "#ff5c33");
-    this.gradient.addColorStop("0.2", "#ff66b3");
-    this.gradient.addColorStop("0.4", "#ccccff");
-    this.gradient.addColorStop("0.6", "#b3ffff");
-    this.gradient.addColorStop("0.8", "#80ff80");
-    this.gradient.addColorStop("0.9", "#ffff33");
-  }
-  #drawLine(angle, x, y) {
-    //let positionX = x;
-    //let positionY = y;
-    //let dx = mouse.x - positionX;
-    //let dy = mouse.y - positionY;
-    //let distance = dx ** 2 + dy ** 2;
-    //if (distance > 600000) distance = 600000;
-    //else if (distance < 50000) distance = 50000;
-    //let length = distance * 0.0001;
-
-    let length = 14;
-    this.#ctx.beginPath();
-    this.#ctx.moveTo(x, y);
-    this.#ctx.lineTo(
-      x + Math.cos(angle) * length,
-      y + Math.sin(angle) * length
-    );
-    this.#ctx.stroke();
+class Particle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.color = "aquamarine";
+    this.size = Math.random() * 3;
+    this.weight = Math.random() * 1 + 1;
+    this.directionX = Math.random() * 2 - 1;
   }
 
-  animate(timeStamp) {
-    const deltaTime = timeStamp - this.lastTime;
-    this.lastTime = timeStamp;
-    if (this.timer > this.interval) {
-      this.#ctx.clearRect(0, 0, this.#width, this.#height);
-      //this.radius = mouse.x * this.vr + mouse.y * this.vr;
-      this.radius += this.vr;
-      //if (this.radius > 5 || this.radius < -5) this.vr *= -1;
-
-      for (let y = 0; y < this.#height; y += this.cellSize) {
-        for (let x = 0; x < this.#width; x += this.cellSize) {
-          let positionX = x;
-          let positionY = y;
-          let dx = mouse.x - positionX;
-          let dy = mouse.y - positionY;
-          let mouseDistance = 0.000005 * (dx * dx + dy * dy);
-          const angle =
-            //(Math.cos(x * 0.00001 * mouseDistance) + Math.sin(y * 0.00001 * mouseDistance)) * this.radius;
-            this.noise.perlin3(
-              x * 0.006,
-              y * 0.006,
-              this.radius + mouseDistance
-            ) *
-            Math.PI *
-            2;
-          this.#drawLine(angle, x, y);
-        }
-      }
-
-      this.timer = 0;
-    } else {
-      this.timer += deltaTime;
+  update() {
+    if (this.y > canvas.height) {
+      this.y = 0 - this.size;
+      this.x = Math.random() * canvas.width * 1.5;
+      this.weight = 2;
     }
+    this.y += this.weight;
+    this.x += this.directionX;
+    this.weight += 0.01;
 
-    flowFieldAnimation = requestAnimationFrame(this.animate.bind(this));
+    if (
+      this.x < title.x + title.width &&
+      this.x + this.size > title.x &&
+      this.y < title.y + title.height &&
+      this.y + this.size > title.y
+    ) {
+      this.y -= 3;
+      this.weight *= -0.5;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.fill();
   }
 }
+
+function init(nParticles) {
+  for (let i = 0; i < nParticles; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    particlesArray.push(new Particle(x, y));
+  }
+}
+
+init(numParticles);
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < particlesArray.length; i++) {
+    particlesArray[i].update();
+    particlesArray[i].draw();
+    if (NETWORKS) {
+      for (let j = i; j < particlesArray.length; j++) {
+        const dx = particlesArray[j].x - particlesArray[i].x;
+        const dy = particlesArray[j].y - particlesArray[i].y;
+        const distance = Math.sqrt(dx ** 2 + dy ** 2);
+        if (distance < 50) {
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = particlesArray[i].size / 8;
+          ctx.beginPath();
+          ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+          ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+          ctx.stroke();
+          ctx.closePath();
+        }
+      }
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+window.addEventListener("resize", function () {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  titleMeasurements = titleElement.getBoundingClientRect();
+  title = {
+    x: titleMeasurements.left,
+    y: titleMeasurements.top,
+    width: titleMeasurements.width,
+    height: titleMeasurements.height - 90,
+  };
+  init();
+});
